@@ -165,8 +165,13 @@ async function getActiveConversions() {
     const active = encodeTasks.filter(t => !t.isFinished && !t.isFailed);
     const activeItemIds = new Set(active.map(t => t.data?.libraryItemId).filter(Boolean));
     const newlyFailed = encodeTasks
-      .filter(t => t.isFailed && t.id && !countedFailedTaskIds.has(t.id) && t.data?.libraryItemId)
+      .filter(t => (t.isFailed || (t.isFinished && t.error)) && t.id && !countedFailedTaskIds.has(t.id) && t.data?.libraryItemId)
       .map(t => ({ taskId: t.id, itemId: t.data.libraryItemId }));
+    if (FAILURE_PERSIST_PATH) {
+      const isFailed = encodeTasks.filter(t => t.isFailed).length;
+      const isFinishedWithError = encodeTasks.filter(t => t.isFinished && t.error).length;
+      log(`encode-m4b tasks seen: ${active.length} active, ${isFailed} isFailed, ${isFinishedWithError} isFinished with error`);
+    }
     return { count: active.length, activeItemIds, newlyFailed };
   } catch (error) {
     log('Warning: failed to fetch tasks, falling back to full slot count: ' + error.message);
